@@ -15,7 +15,7 @@ class MacroRecorder:
     def __init__(self, root):
         self.root = root
         self.root.title("Macro Recorder")
-        self.root.geometry("800x600")
+        self.root.geometry("1000x600")
         self.root.configure(bg="#f0f0f0")
 
         self.is_running = False  # Estado do macro
@@ -38,12 +38,12 @@ class MacroRecorder:
 
         # Botões de controle com ícones de Play e Stop
         button_style = {
-            "bg": "#0078d7",  # Fundo azul
-            "fg": "white",    # Texto branco
+            "bg": "#0078d7",
+            "fg": "white",
             "font": ("Helvetica", 10),
-            "border": 0,       # Remove a borda padrão
-            "activebackground": "#005bb5",  # Cor ao clicar
-            "activeforeground": "white",    # Texto ao clicar
+            "border": 0,
+            "activebackground": "#005bb5",
+            "activeforeground": "white",
             "padx": 10,
             "pady": 5,
         }
@@ -60,6 +60,10 @@ class MacroRecorder:
         # Botão único para Play/Stop
         self.toggle_btn = tk.Button(self.control_buttons_frame, image=self.play_icon, command=self.toggle_macro, **button_main_style)
         self.toggle_btn.pack(side=tk.LEFT, padx=5, expand=True)
+
+        self.loop_var = tk.BooleanVar(value=False)  # Variável do checkbox
+        self.loop_checkbox = tk.Checkbutton(self.control_buttons_frame, text="Loo Infinito", variable=self.loop_var)
+        self.loop_checkbox.pack()
 
         # Frame para botões de ação
         self.action_buttons_frame = tk.Frame(self.main_frame, bg="#f0f0f0")
@@ -81,9 +85,12 @@ class MacroRecorder:
         self.move_mouse_btn = tk.Button(self.action_buttons_frame, text="Mover Mouse", command=self.move_mouse, **button_style)
         self.move_mouse_btn.pack(side=tk.LEFT, padx=5, expand=True)
 
-        # Botão para adicionar verificação de imagem
         self.add_image_btn = tk.Button(self.action_buttons_frame, text="Verificar Imagem", command=self.add_image_check, **button_style)
         self.add_image_btn.pack(side=tk.LEFT, padx=5, expand=True)
+
+        # Novos botões para grupos
+        self.add_group_btn = tk.Button(self.action_buttons_frame, text="Adicionar Grupo", command=lambda: self.add_group(), **button_style)
+        self.add_group_btn.pack(side=tk.LEFT, padx=5, expand=True)
 
         # Lista de ações
         self.actions_listbox = tk.Listbox(self.main_frame, height=12, width=60, font=("Helvetica", 10), bg="white", fg="black", selectmode=tk.EXTENDED)
@@ -103,13 +110,12 @@ class MacroRecorder:
         self.move_down_btn = tk.Button(self.move_buttons_frame, text="Mover para Baixo", command=self.move_down, **button_style)
         self.move_down_btn.pack(side=tk.LEFT, padx=5, expand=True)
 
-        # Botão de duplicar itens
-        self.duplicate_btn = tk.Button(self.move_buttons_frame, text="Duplicar Itens", command=self.duplicate_items, bg="#0078d7", fg="white", font=("Helvetica", 10), border=0, activebackground="#005bb5", activeforeground="white", padx=10, pady=5)
+        self.duplicate_btn = tk.Button(self.move_buttons_frame, text="Duplicar Itens", command=self.duplicate_items, **button_style)
         self.duplicate_btn.pack(side=tk.LEFT, padx=5, expand=True)
 
-        # Botão de Reset
         self.reset_btn = tk.Button(self.move_buttons_frame, text="Resetar", command=self.reset_macro, **button_style)
         self.reset_btn.pack(side=tk.LEFT, padx=5, expand=True)
+
 
     def create_menu(self):
         """Cria a barra de menu com as opções Save e Load."""
@@ -435,10 +441,18 @@ class MacroRecorder:
         self.execute_next_action()
 
     def execute_next_action(self):
-        """Executa a ação atual e avança para a próxima."""
-        if not self.is_running or self.current_index >= len(self.actions):
+        """Executa a ação atual e avança para a próxima, com suporte para pular ações após um image_check falho e loop infinito."""
+        if not self.is_running:
             self.stop_macro()
             return
+
+        # Se atingiu o fim da lista
+        if self.current_index >= len(self.actions):
+            if self.loop_var.get():  # Se o loop infinito estiver ativado
+                self.current_index = 0  # Reinicia do começo
+            else:
+                self.stop_macro()
+                return
 
         action, value = self.actions[self.current_index]
 
@@ -446,6 +460,8 @@ class MacroRecorder:
         self.actions_listbox.selection_clear(0, tk.END)
         self.actions_listbox.select_set(self.current_index)
         self.actions_listbox.see(self.current_index)
+
+        should_skip_next = False
 
         # Executa a ação correspondente
         if action == "key":
@@ -475,21 +491,40 @@ class MacroRecorder:
                 if location:
                     time.sleep(0.5)
                     pyautogui.click(location[0] + 10, location[1] + 10)
+                else:
+                    should_skip_next = True  # Ativa a flag para pular a próxima ação/grupo
 
         self.current_index += 1
+
+        # Se o `image_check` falhou, pula a próxima linha ou grupo inteiro
+        if should_skip_next and self.current_index < len(self.actions):
+            next_action, next_value = self.actions[self.current_index]
+
+            if next_action == "group_start":
+                # Pular o grupo inteiro
+                group_name = next_value
+                while self.current_index < len(self.actions) and self.actions[self.current_index] != ["group_end", group_name]:
+                    self.current_index += 1
+                self.current_index += 1  # Pula também o `group_end`
+            else:
+                self.current_index += 1  # Apenas pula a próxima linha se não for um grupo
+
         self.root.after(200, self.execute_next_action)  # Agenda a próxima ação
 
     def remove_item(self):
-        """Remove os itens selecionados da lista de ações."""
-        selected_indices = list(self.actions_listbox.curselection())[::-1]  # Reverter para evitar erro ao excluir múltiplos
-        if not selected_indices:
-            return
-
+        """Remove itens selecionados, considerando grupos."""
+        selected_indices = list(self.actions_listbox.curselection())[::-1]
+        
         for index in selected_indices:
             if 0 <= index < len(self.actions):
-                self.actions.pop(index)
-                self.actions_listbox.delete(index)
-
+                if self.actions[index][0] == "group_start":
+                    # Remover tudo até encontrar "group_end"
+                    group_name = self.actions[index][1]
+                    while index < len(self.actions) and self.actions[index] != ["group_end", group_name]:
+                        self.actions.pop(index)
+                    self.actions.pop(index)  # Remove também "group_end"
+                else:
+                    self.actions.pop(index)
         self.update_listbox()
     
     def reset_macro(self):
@@ -504,15 +539,15 @@ class MacroRecorder:
             messagebox.showerror("Erro", f"Erro ao resetar o macro: {e}")
 
     def move_up(self):
-        """Move os itens selecionados para cima na lista."""
-        selected_indices = list(self.actions_listbox.curselection())  # Obtém índices selecionados
+        """Move ações ou grupos selecionados para cima."""
+        selected_indices = list(self.actions_listbox.curselection())
         if not selected_indices or selected_indices[0] == 0:
-            return  # Evita mover além do topo
-
+            return
+        
         for index in selected_indices:
-            if index > 0:
+            if 0 < index < len(self.actions):
                 self.actions[index - 1], self.actions[index] = self.actions[index], self.actions[index - 1]
-
+        
         self.update_listbox()
 
         # Atualiza a seleção após mover
@@ -521,15 +556,15 @@ class MacroRecorder:
             self.actions_listbox.select_set(index - 1)
 
     def move_down(self):
-        """Move os itens selecionados para baixo na lista."""
-        selected_indices = list(self.actions_listbox.curselection())[::-1]  # Reverte para processar de baixo para cima
+        """Move ações ou grupos selecionados para baixo."""
+        selected_indices = list(self.actions_listbox.curselection())[::-1]
         if not selected_indices or selected_indices[-1] == len(self.actions) - 1:
-            return  # Evita mover além do final
-
+            return
+        
         for index in selected_indices:
             if index < len(self.actions) - 1:
                 self.actions[index + 1], self.actions[index] = self.actions[index], self.actions[index + 1]
-
+        
         self.update_listbox()
 
         # Atualiza a seleção após mover
@@ -538,21 +573,64 @@ class MacroRecorder:
             self.actions_listbox.select_set(index + 1)
 
     def duplicate_items(self):
-        """Duplica os itens selecionados e os adiciona ao final da lista."""
-        selected_indices = self.actions_listbox.curselection()
+        """Duplica os itens selecionados e adiciona ao final da lista."""
+        selected_indices = list(self.actions_listbox.curselection())
         if not selected_indices:
             return
-        
-        for index in selected_indices:
-            if 0 <= index < len(self.actions):
-                self.actions.append(self.actions[index])
-        
+
+        new_items = []
+        i = 0
+
+        while i < len(selected_indices):
+            index = selected_indices[i]
+            action = self.actions[index]
+
+            if action[0] == "group_start":
+                # Encontrar o índice correspondente do "group_end"
+                group_name = action[1]
+                end_index = index + 1
+
+                while end_index < len(self.actions) and self.actions[end_index] != ["group_end", group_name]:
+                    end_index += 1
+
+                if end_index < len(self.actions):
+                    end_index += 1  # Incluir o "group_end" na cópia
+
+                new_items.extend(self.actions[index:end_index])  # Copia o grupo inteiro
+                i = selected_indices.index(end_index - 1) + 1 if end_index - 1 in selected_indices else i + 1
+            else:
+                new_items.append(action)
+                i += 1
+
+        self.actions.extend(new_items)
+        self.update_listbox()
+
+    def add_group(self):
+        """Adiciona um novo grupo em torno dos itens selecionados ou ao final da lista."""
+        group_name = simpledialog.askstring("Nome do Grupo", "Digite o nome do grupo:")
+        if not group_name:
+            return  # Se o usuário cancelar ou não digitar nada, não faz nada.
+
+        selected_indices = list(self.actions_listbox.curselection())
+
+        if selected_indices:
+            # Se houver itens selecionados, encapsula em um grupo
+            start_index = selected_indices[0]
+            end_index = selected_indices[-1] + 1  # Ajusta para incluir o último item
+
+            self.actions.insert(start_index, ["group_start", group_name])
+            self.actions.insert(end_index + 1, ["group_end", group_name])
+        else:
+            # Caso contrário, adiciona um grupo vazio no final
+            self.actions.append(["group_start", group_name])
+            self.actions.append(["group_end", group_name])
+
         self.update_listbox()
 
     def update_listbox(self):
         """Atualiza a lista de ações na interface, garantindo que os dados estejam sincronizados."""
         self.actions_listbox.delete(0, tk.END)  # Limpa a Listbox
-        
+
         for action, value in self.actions:
             match action:
                 case "key":
@@ -568,6 +646,11 @@ class MacroRecorder:
                     self.actions_listbox.insert(tk.END, f"Mover mouse para {value}")
                 case "image_check":
                     self.actions_listbox.insert(tk.END, f"Verificar Imagem: {os.path.basename(value)}")
+                case "group_start":
+                    self.actions_listbox.insert(tk.END, f"📂 Grupo: {value}")  # Ícone para representar grupo
+                case "group_end":
+                    self.actions_listbox.insert(tk.END, f"📁 Fim do Grupo: {value}")  # Ícone para representar fechamento do grupo
+
 
 if __name__ == "__main__":
     root = tk.Tk()
