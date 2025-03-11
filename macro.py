@@ -489,13 +489,22 @@ class MacroRecorder:
 
         elif action == "image_check":
             image_path = os.path.normpath(value)
+            
             if os.path.exists(image_path) and os.access(image_path, os.R_OK):
-                location = self.find_image_with_opencv(image_path, threshold=0.8) if hasattr(self, "find_image_with_opencv") else None
-                if location:
-                    time.sleep(0.5)
-                    pyautogui.click(location[0] + 10, location[1] + 10)
-                else:
-                    should_skip_next = True  # Ativa a flag para pular a próxima ação/grupo
+                found = False
+                
+                for _ in range(3):  # Tenta até 3 vezes
+                    location = self.find_image_with_opencv(image_path, threshold=0.8) if hasattr(self, "find_image_with_opencv") else None
+                    if location:
+                        found = True
+                        time.sleep(0.5)  # Pequena espera antes de clicar
+                        pyautogui.click(location[0] + 10, location[1] + 10)
+                        break  # Sai do loop se encontrar a imagem
+                    
+                    time.sleep(0.2)  # Aguarda 200ms antes da próxima tentativa
+                
+                if not found:
+                    should_skip_next = True  # Se não encontrou, pula a próxima ação/grupo
 
         self.current_index += 1
 
