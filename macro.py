@@ -1,11 +1,13 @@
 import tkinter as tk
-from tkinter import messagebox, simpledialog, filedialog
+from tkinter import messagebox, simpledialog, filedialog, PhotoImage
+import ttkbootstrap as ttk
+from ttkbootstrap.constants import *
 from pynput import mouse
+from PIL import Image, ImageTk
 import pyautogui
 import keyboard
 import threading
 import time
-from tkinter import PhotoImage
 import json
 import os
 import cv2
@@ -15,8 +17,9 @@ class MacroRecorder:
     def __init__(self, root):
         self.root = root
         self.root.title("Macro Recorder")
-        self.root.geometry("1000x600")
+        self.root.geometry("700x600")
         self.root.configure(bg="#f0f0f0")
+        style = ttk.Style(theme="superhero")
 
         self.is_running = False  # Estado do macro
         self.actions = []  # Lista de ações
@@ -25,97 +28,97 @@ class MacroRecorder:
         self.create_menu()
 
         # Frame principal
-        self.main_frame = tk.Frame(root, bg="#f0f0f0", padx=20, pady=20)
+        self.main_frame = ttk.Frame(root)
         self.main_frame.pack(fill=tk.BOTH, expand=True)
 
         # Título
-        self.title_label = tk.Label(self.main_frame, text="Macro Recorder", font=("Helvetica", 16, "bold"), bg="#f0f0f0", fg="#333333")
+        self.title_label = ttk.Label(self.main_frame, text="Macro Recorder", font=("Helvetica", 18, "bold"), bootstyle="light")
         self.title_label.pack(pady=10)
 
         # Frame para os botões de controle de macro no topo
-        self.control_buttons_frame = tk.Frame(self.main_frame, bg="#f0f0f0")
+        self.control_buttons_frame = ttk.Frame(self.main_frame)
         self.control_buttons_frame.pack(fill=tk.X, pady=10)
 
-        # Botões de controle com ícones de Play e Stop
-        button_style = {
-            "bg": "#0078d7",
-            "fg": "white",
-            "font": ("Helvetica", 10),
-            "border": 0,
-            "activebackground": "#005bb5",
-            "activeforeground": "white",
-            "padx": 10,
-            "pady": 5,
-        }
+        imagePlay = Image.open("play_icon.png")
+        imagePlay = imagePlay.resize((64, 64), Image.LANCZOS)
 
-        button_main_style = {
-            "bg": "#f0f0f0",
-            "border": 0,
-        }
+        imageStop = Image.open("stop_icon.png")
+        imageStop = imageStop.resize((64, 64), Image.LANCZOS)
 
         # Carregando ícones para Play e Stop
-        self.play_icon = PhotoImage(file="play_icon.png").subsample(16, 16)
-        self.stop_icon = PhotoImage(file="stop_icon.png").subsample(16, 16)
+        self.play_icon = ImageTk.PhotoImage(imagePlay)
+        self.stop_icon = ImageTk.PhotoImage(imageStop)
 
-        # Botão único para Play/Stop
-        self.toggle_btn = tk.Button(self.control_buttons_frame, image=self.play_icon, command=self.toggle_macro, **button_main_style)
+        self.toggle_btn = tk.Label(
+            self.control_buttons_frame, 
+            image=self.play_icon, 
+            background="white"  # Pode ajustar para a cor desejada
+        )
         self.toggle_btn.pack(side=tk.LEFT, padx=5, expand=True)
 
+        # Adiciona evento de clique
+        self.toggle_btn.bind("<Button-1>", lambda event: self.toggle_macro())
+
+        # Frame para os botões de controle de macro no topo
+        self.control_check_frame = ttk.Frame(self.main_frame)
+        self.control_check_frame.pack(fill=tk.X, pady=10)
+
         self.loop_var = tk.BooleanVar(value=False)  # Variável do checkbox
-        self.loop_checkbox = tk.Checkbutton(self.control_buttons_frame, text="Loo Infinito", variable=self.loop_var)
-        self.loop_checkbox.pack()
+        self.loop_checkbox = ttk.Checkbutton(self.control_check_frame, bootstyle="success-round-toggle", text="Loop Infinito", variable=self.loop_var)
+        self.loop_checkbox.pack(side=tk.RIGHT, pady=10, padx=10)
 
-        # Frame para botões de ação
-        self.action_buttons_frame = tk.Frame(self.main_frame, bg="#f0f0f0")
-        self.action_buttons_frame.pack(fill=tk.X, pady=10)
-
-        # Botões de ação
-        self.add_key_btn = tk.Button(self.action_buttons_frame, text="Clicar Tecla", command=self.add_key, **button_style)
-        self.add_key_btn.pack(side=tk.LEFT, padx=5, expand=True)
-
-        self.press_key_btn = tk.Button(self.action_buttons_frame, text="Pressionar Tecla", command=self.add_press_key, **button_style)
-        self.press_key_btn.pack(side=tk.LEFT, padx=5, expand=True)
-
-        self.wait_btn = tk.Button(self.action_buttons_frame, text="Adicionar Espera", command=self.add_wait, **button_style)
-        self.wait_btn.pack(side=tk.LEFT, padx=5, expand=True)
-
-        self.add_click_btn = tk.Button(self.action_buttons_frame, text="Adicionar Clique", command=self.add_click, **button_style)
-        self.add_click_btn.pack(side=tk.LEFT, padx=5, expand=True)
-
-        self.move_mouse_btn = tk.Button(self.action_buttons_frame, text="Mover Mouse", command=self.move_mouse, **button_style)
-        self.move_mouse_btn.pack(side=tk.LEFT, padx=5, expand=True)
-
-        self.add_image_btn = tk.Button(self.action_buttons_frame, text="Verificar Imagem", command=self.add_image_check, **button_style)
-        self.add_image_btn.pack(side=tk.LEFT, padx=5, expand=True)
-
-        # Novos botões para grupos
-        self.add_group_btn = tk.Button(self.action_buttons_frame, text="Adicionar Grupo", command=lambda: self.add_group(), **button_style)
-        self.add_group_btn.pack(side=tk.LEFT, padx=5, expand=True)
-
-        # Lista de ações
-        self.actions_listbox = tk.Listbox(self.main_frame, height=12, width=60, font=("Helvetica", 10), bg="white", fg="black", selectmode=tk.EXTENDED)
-        self.actions_listbox.pack(fill=tk.BOTH, pady=10, expand=True)
 
         # Frame para botões de controle de movimentação
-        self.move_buttons_frame = tk.Frame(self.main_frame, bg="#f0f0f0")
+        self.move_buttons_frame = tk.Frame(self.main_frame)
         self.move_buttons_frame.pack(fill=tk.X, pady=10)
 
         # Botões de controle
-        self.remove_btn = tk.Button(self.move_buttons_frame, text="Remover Item", command=self.remove_item, **button_style)
-        self.remove_btn.pack(side=tk.LEFT, padx=5, expand=True)
+        self.remove_btn = ttk.Button(self.move_buttons_frame, text="Remover Item", command=self.remove_item, bootstyle="primary")
+        self.remove_btn.pack(side=tk.RIGHT, padx=5)
 
-        self.move_up_btn = tk.Button(self.move_buttons_frame, text="Mover para Cima", command=self.move_up, **button_style)
-        self.move_up_btn.pack(side=tk.LEFT, padx=5, expand=True)
+        self.move_up_btn = ttk.Button(self.move_buttons_frame, text="Mover para Cima", command=self.move_up, bootstyle="primary")
+        self.move_up_btn.pack(side=tk.RIGHT, padx=5)
 
-        self.move_down_btn = tk.Button(self.move_buttons_frame, text="Mover para Baixo", command=self.move_down, **button_style)
-        self.move_down_btn.pack(side=tk.LEFT, padx=5, expand=True)
+        self.move_down_btn = ttk.Button(self.move_buttons_frame, text="Mover para Baixo", command=self.move_down, bootstyle="primary")
+        self.move_down_btn.pack(side=tk.RIGHT, padx=5)
 
-        self.duplicate_btn = tk.Button(self.move_buttons_frame, text="Duplicar Itens", command=self.duplicate_items, **button_style)
-        self.duplicate_btn.pack(side=tk.LEFT, padx=5, expand=True)
+        self.duplicate_btn = ttk.Button(self.move_buttons_frame, text="Duplicar Itens", command=self.duplicate_items, bootstyle="primary")
+        self.duplicate_btn.pack(side=tk.RIGHT, padx=5)
 
-        self.reset_btn = tk.Button(self.move_buttons_frame, text="Resetar", command=self.reset_macro, **button_style)
-        self.reset_btn.pack(side=tk.LEFT, padx=5, expand=True)
+        self.reset_btn = ttk.Button(self.move_buttons_frame, text="Resetar", command=self.reset_macro, bootstyle="primary")
+        self.reset_btn.pack(side=tk.RIGHT, padx=5)
 
+
+        # Frame para botões de ação
+        self.action_buttons_frame = ttk.Frame(self.main_frame)
+        self.action_buttons_frame.pack(side=tk.LEFT, pady=10)
+
+        # Botões de ação
+        self.add_key_btn = ttk.Button(self.action_buttons_frame, text="Clicar Tecla", command=self.add_key, bootstyle="secondary")
+        self.add_key_btn.pack(fill=tk.X, padx=10, pady=5)
+
+        self.press_key_btn = ttk.Button(self.action_buttons_frame, text="Pressionar Tecla", command=self.add_press_key, bootstyle="secondary")
+        self.press_key_btn.pack(fill=tk.X, padx=10, pady=5)
+
+        self.wait_btn = ttk.Button(self.action_buttons_frame, text="Adicionar Espera", command=self.add_wait, bootstyle="secondary")
+        self.wait_btn.pack(fill=tk.X, padx=10, pady=5)
+
+        self.add_click_btn = ttk.Button(self.action_buttons_frame, text="Adicionar Clique", command=self.add_click, bootstyle="secondary")
+        self.add_click_btn.pack(fill=tk.X, padx=10, pady=5)
+
+        self.move_mouse_btn = ttk.Button(self.action_buttons_frame, text="Mover Mouse", command=self.move_mouse, bootstyle="secondary")
+        self.move_mouse_btn.pack(fill=tk.X, padx=10, pady=5)
+
+        self.add_image_btn = ttk.Button(self.action_buttons_frame, text="Verificar Imagem", command=self.add_image_check, bootstyle="secondary")
+        self.add_image_btn.pack(fill=tk.X, padx=10, pady=5)
+
+        self.add_group_btn = ttk.Button(self.action_buttons_frame, text="Adicionar Grupo", command=lambda: self.add_group(), bootstyle="secondary")
+        self.add_group_btn.pack(fill=tk.X, padx=10, pady=5)
+
+
+        # Lista de ações
+        self.actions_listbox = tk.Listbox(self.main_frame, height=12, width=60, selectmode=tk.EXTENDED)
+        self.actions_listbox.pack(fill=tk.BOTH, pady=10, padx=10, expand=True)
 
     def create_menu(self):
         """Cria a barra de menu com as opções Save e Load."""
@@ -164,7 +167,7 @@ class MacroRecorder:
     def add_key(self):
         """Captura combinações de teclas, agora com a opção de pressionar a tecla por um tempo."""
         # Mudar o texto do botão para "Gravando..." e ajustar as cores
-        self.add_key_btn.config(text="Gravando...", state=tk.DISABLED, bg="#f44336", fg="white")
+        self.add_key_btn.config(text="Gravando...", state=tk.DISABLED, bootstyle="warning")
 
         def capture_keys():
             recorded_keys = []  # Lista para manter a ordem
@@ -191,7 +194,7 @@ class MacroRecorder:
                 self.actions_listbox.insert(tk.END, f"Pressionar: {hotkey}")
             
             # Depois de capturar as teclas, retorna o texto do botão e habilita novamente, com as cores padrão
-            self.add_key_btn.config(text="Clicar Tecla", state=tk.NORMAL, bg="#0078d7", fg="white")
+            self.add_key_btn.config(text="Clicar Tecla", state=tk.NORMAL, bootstyle="secondary")
         threading.Thread(target=capture_keys, daemon=True).start()
 
     def add_press_key(self):
@@ -202,7 +205,7 @@ class MacroRecorder:
             def capture_keys():
                 recorded_keys = []  # Lista para manter a ordem
                 pressed_keys = set()  # Controla teclas pressionadas
-                self.press_key_btn.config(text="Gravando...", state=tk.DISABLED, bg="#f44336", fg="white")
+                self.press_key_btn.config(text="Gravando...", state=tk.DISABLED, bootstyle="warning")
 
                 while True:
                     event = keyboard.read_event()
@@ -225,7 +228,7 @@ class MacroRecorder:
                     self.actions_listbox.insert(tk.END, f"Pressionar {hotkey} por {press_time} ms")
                 
                 # Depois de capturar as teclas, retorna o texto do botão e habilita novamente, com as cores padrão
-                self.press_key_btn.config(text="Pressionar Tecla", state=tk.NORMAL, bg="#0078d7", fg="white")
+                self.press_key_btn.config(text="Pressionar Tecla", state=tk.NORMAL, bootstyle="secondary")
             threading.Thread(target=capture_keys, daemon=True).start()
 
     def add_wait(self):
@@ -244,13 +247,13 @@ class MacroRecorder:
     
     def move_mouse(self):
         """Aguarda um clique do usuário e captura a posição do mouse."""
-        self.move_mouse_btn.config(text="Clique para gravar", state=tk.DISABLED, bg="#f44336", fg="white")
+        self.move_mouse_btn.config(text="Clique para gravar", state=tk.DISABLED, bootstyle="warning")
 
         def on_click(x, y, button, pressed):
             if pressed and button == mouse.Button.left:  # Captura apenas o clique esquerdo
                 self.actions.append(("move", (x, y)))
                 self.actions_listbox.insert(tk.END, f"Mover mouse para ({x}, {y})")
-                self.move_mouse_btn.config(text="Mover Mouse", state=tk.NORMAL, bg="#0078d7", fg="white")
+                self.move_mouse_btn.config(text="Mover Mouse", state=tk.NORMAL, bootstyle="secondary")
                 listener.stop()  # Para o listener após capturar o clique
 
         # Executa o listener em uma thread separada
