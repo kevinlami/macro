@@ -498,7 +498,7 @@ class MacroRecorder:
                     if location:
                         found = True
                         time.sleep(0.5)  # Pequena espera antes de clicar
-                        pyautogui.click(location[0] + 10, location[1] + 10)
+                        pyautogui.moveTo(location[0] + 10, location[1] + 10)
                         break  # Sai do loop se encontrar a imagem
                     
                     time.sleep(0.2)  # Aguarda 200ms antes da próxima tentativa
