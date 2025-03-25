@@ -17,12 +17,11 @@ import numpy as np
 class MacroRecorder:
     def __init__(self, root):
         self.root = root
-
-        self.is_running = False  # Estado do macro
-        self.actions = []  # Lista de ações
-        self.loop_var = tk.BooleanVar(value=False)  # Variável do checkbox
-
+        self.is_running = False
+        self.actions = []
+        self.loop_var = tk.BooleanVar(value=False)
         self.gui = GuiRecorder(root, self)
+        self.current_index = 0
 
     def toggle_macro(self):
         """Alterna entre iniciar e parar o macro."""
@@ -95,34 +94,30 @@ class MacroRecorder:
         start_index = min(selected_indices) if selected_indices else 0
 
         self.is_running = True
-        self.current_index = start_index  # Armazena a posição atual para retomar corretamente
-
+        self.current_index = start_index
         self.execute_next_action()
 
     def execute_next_action(self):
-        """Executa a ação atual e avança para a próxima, com suporte para pular ações após um image_check falho e loop infinito."""
+        """Executa a ação atual e avança para a próxima, garantindo que a UI continue responsiva."""
         if not self.is_running:
             self.stop_macro()
             return
 
-        # Se atingiu o fim da lista
         if self.current_index >= len(self.actions):
-            if self.loop_var.get():  # Se o loop infinito estiver ativado
-                self.current_index = 0  # Reinicia do começo
+            if self.loop_var.get():
+                self.current_index = 0
             else:
                 self.stop_macro()
                 return
 
         action, value = self.actions[self.current_index]
 
-        # Atualiza visualmente a ação em execução
         self.gui.actions_listbox.selection_clear(0, tk.END)
         self.gui.actions_listbox.select_set(self.current_index)
         self.gui.actions_listbox.see(self.current_index)
 
         should_skip_next = False
 
-        # Executa a ação correspondente
         if action == "key":
             keys = value.split('+')
             pyautogui.hotkey(*keys)
@@ -135,7 +130,9 @@ class MacroRecorder:
                 time.sleep(0.05)
 
         elif action == "wait":
-            time.sleep(value / 1000)
+            self.current_index += 1
+            self.root.after(int(value), self.execute_next_action)
+            return
 
         elif action == "click":
             pyautogui.click(button=value)
