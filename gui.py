@@ -48,7 +48,7 @@ class GuiRecorder:
         self.drag_data = {"index": None}
     
     def create_menu(self):
-        """Cria a barra de menu com as opções Save e Load."""
+        """Cria a barra de menu com as opções de salvar, carregar, rodar e parar macro."""
         menubar = tk.Menu(self.root)
 
         # Menu "Arquivo"
@@ -57,9 +57,13 @@ class GuiRecorder:
         file_menu.add_command(label="Carregar Macros", command=self.command.load_macros)
         file_menu.add_separator()
         file_menu.add_command(label="Sair", command=self.root.quit)
-
-        # Adiciona o menu "Arquivo" à barra de menus
         menubar.add_cascade(label="Arquivo", menu=file_menu)
+
+        # Menu "Macro" com opções de iniciar e parar
+        macro_menu = tk.Menu(menubar, tearoff=0)
+        macro_menu.add_command(label="▶ Rodar Macro (F5)", command=self.main.start_macro)
+        macro_menu.add_command(label="■ Parar Macro (F6)", command=self.main.stop_macro)
+        menubar.add_cascade(label="Macro", menu=macro_menu)
 
         # Configura a barra de menus na janela principal
         self.root.config(menu=menubar)

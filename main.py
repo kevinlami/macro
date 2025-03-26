@@ -23,6 +23,9 @@ class MacroRecorder:
         self.gui = GuiRecorder(root, self)
         self.current_index = 0
 
+        keyboard.add_hotkey("F5", self.start_macro)
+        keyboard.add_hotkey("F6", self.stop_macro)
+
     def toggle_macro(self):
         """Alterna entre iniciar e parar o macro."""
         if not self.is_running:
@@ -176,8 +179,15 @@ class MacroRecorder:
 
         self.root.after(200, self.execute_next_action)  # Agenda a próxima ação
 
+def run_keyboard_listener():
+    """Mantém o script rodando para capturar os atalhos globais"""
+    keyboard.wait()
 
 if __name__ == "__main__":
     root = tk.Tk()
     app = MacroRecorder(root)
+
+    keyboard_thread = threading.Thread(target=run_keyboard_listener, daemon=True)
+    keyboard_thread.start()
+
     root.mainloop()
