@@ -35,9 +35,17 @@ class GuiRecorder:
         self.create_list_commands()
         self.create_actions()
 
-        # Lista de ações
+        # Lista de ações (Listbox)
         self.actions_listbox = tk.Listbox(self.main_frame, height=12, width=60, selectmode=tk.EXTENDED)
         self.actions_listbox.pack(fill=tk.BOTH, pady=10, padx=10, expand=True)
+
+        # Eventos para drag and drop
+        self.actions_listbox.bind("<ButtonPress-1>", self.on_start_drag)
+        self.actions_listbox.bind("<B1-Motion>", self.on_drag)
+        self.actions_listbox.bind("<ButtonRelease-1>", self.on_drop)
+
+        # Dados de arrasto
+        self.drag_data = {"index": None}
     
     def create_menu(self):
         """Cria a barra de menu com as opções Save e Load."""
@@ -144,9 +152,12 @@ class GuiRecorder:
         self.add_group_btn.pack(fill=tk.X, padx=10, pady=5)
 
     def update_listbox(self):
-        """Atualiza a lista de ações na interface, garantindo que os dados estejam sincronizados."""
-        self.actions_listbox.delete(0, tk.END)  # Limpa a Listbox
+        """Atualiza a Listbox sem perder a posição do scroll."""
+        # Salva a posição atual do scroll
+        scroll_pos = self.actions_listbox.yview()
 
+        # Atualiza os itens
+        self.actions_listbox.delete(0, tk.END)
         for action, value in self.main.actions:
             match action:
                 case "key":
@@ -163,6 +174,34 @@ class GuiRecorder:
                 case "image_check":
                     self.actions_listbox.insert(tk.END, f"Verificar Imagem: {os.path.basename(value)}")
                 case "group_start":
-                    self.actions_listbox.insert(tk.END, f"📂 Grupo: {value}")  # Ícone para representar grupo
+                    self.actions_listbox.insert(tk.END, f"📂 Grupo: {value}")
                 case "group_end":
-                    self.actions_listbox.insert(tk.END, f"📁 Fim do Grupo: {value}")  # Ícone para representar fechamento do grupo
+                    self.actions_listbox.insert(tk.END, f"📁 Fim do Grupo: {value}")
+
+        # Restaura a posição do scroll
+        self.actions_listbox.yview_moveto(scroll_pos[0])
+    
+    def on_start_drag(self, event):
+        """Inicia o processo de arrastar pegando o índice do item clicado."""
+        index = self.actions_listbox.nearest(event.y)
+        self.drag_data["index"] = index
+
+    def on_drag(self, event):
+        """Detecta movimento do item na lista e troca as posições."""
+        index = self.actions_listbox.nearest(event.y)
+        if index != self.drag_data["index"]:  
+            self.swap_items(self.drag_data["index"], index)
+            self.drag_data["index"] = index
+
+    def on_drop(self, event):
+        """Finaliza o processo de arrastar e soltar."""
+        self.drag_data["index"] = None
+
+    def swap_items(self, old_index, new_index):
+        """Troca a posição dos itens na Listbox e na lista de ações."""
+        if old_index is not None and new_index is not None and old_index != new_index:
+            # Troca na lista de ações principal
+            self.main.actions.insert(new_index, self.main.actions.pop(old_index))
+
+            # Atualiza a Listbox para refletir a nova ordem
+            self.update_listbox()
