@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import messagebox, simpledialog, filedialog, PhotoImage
+from tkinter import messagebox, simpledialog, filedialog, Toplevel, Button, StringVar
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from pynput import mouse
@@ -95,9 +95,43 @@ class ActionRecorder:
             self.gui.update_listbox()
 
     def add_click(self):
-        """Adiciona um clique do mouse."""
-        click_type = simpledialog.askstring("Adicionar Clique", "Digite 'left' para clique esquerdo ou 'right' para direito:")
-        if click_type in ["left", "right"]:
+        """Adiciona um clique do mouse usando botões em vez de input, com janela centralizada."""
+        top = Toplevel(self.root)
+        top.title("Adicionar Clique")
+
+        # Dimensões da janela principal
+        root_x = self.root.winfo_x()
+        root_y = self.root.winfo_y()
+        root_width = self.root.winfo_width()
+        root_height = self.root.winfo_height()
+
+        # Dimensões da janela do diálogo
+        dialog_width = 250
+        dialog_height = 100
+
+        # Calcula posição centralizada
+        pos_x = root_x + (root_width - dialog_width) // 2
+        pos_y = root_y + (root_height - dialog_height) // 2
+
+        # Define posição e tamanho
+        top.geometry(f"{dialog_width}x{dialog_height}+{pos_x}+{pos_y}")
+
+        selected_button = StringVar()
+
+        def set_click(value):
+            selected_button.set(value)
+            top.destroy()  # Fecha a janela ao escolher
+
+        # Criando botões para seleção
+        Button(top, text="Left", command=lambda: set_click("left"), width=10).pack(pady=5)
+        Button(top, text="Middle", command=lambda: set_click("middle"), width=10).pack(pady=5)
+        Button(top, text="Right", command=lambda: set_click("right"), width=10).pack(pady=5)
+
+        top.wait_window()  # Aguarda a escolha do usuário
+
+        # Adiciona o clique à lista de ações se for válido
+        click_type = selected_button.get()
+        if click_type in ["left", "middle", "right"]:
             self.main.actions.append(("click", click_type))
             self.gui.update_listbox()
     
