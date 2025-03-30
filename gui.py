@@ -3,6 +3,7 @@ from command import CommandRecorder
 from action import ActionRecorder
 from tkinter import messagebox, simpledialog, filedialog, PhotoImage
 import ttkbootstrap as ttk
+from ttkbootstrap.icons import Emoji
 from ttkbootstrap.constants import *
 from pynput import mouse
 from PIL import Image, ImageTk
@@ -107,24 +108,19 @@ class GuiRecorder:
 
     def create_list_commands(self):
         """Cria area de comandos para a lista."""
-                # Frame para botões de controle de movimentação
+        # Frame para botões de controle de movimentação
         self.move_buttons_frame = tk.Frame(self.main_frame)
         self.move_buttons_frame.pack(fill=tk.X, pady=10)
 
-        # Botões de controle
-        self.remove_btn = ttk.Button(self.move_buttons_frame, text="Remover Item", command=self.command.remove_item, bootstyle="primary")
+        self.remove_btn = ttk.Button(self.move_buttons_frame, text=" 🗑 Remover", command=self.command.remove_item, bootstyle="danger")
         self.remove_btn.pack(side=tk.RIGHT, padx=5)
-
-        self.move_up_btn = ttk.Button(self.move_buttons_frame, text="Mover para Cima", command=self.command.move_up, bootstyle="primary")
+        self.move_up_btn = ttk.Button(self.move_buttons_frame, text=" 🔼 Cima", command=self.command.move_up, bootstyle="primary")
         self.move_up_btn.pack(side=tk.RIGHT, padx=5)
-
-        self.move_down_btn = ttk.Button(self.move_buttons_frame, text="Mover para Baixo", command=self.command.move_down, bootstyle="primary")
+        self.move_down_btn = ttk.Button(self.move_buttons_frame, text=" 🔽 Baixo", command=self.command.move_down, bootstyle="primary")
         self.move_down_btn.pack(side=tk.RIGHT, padx=5)
-
-        self.duplicate_btn = ttk.Button(self.move_buttons_frame, text="Duplicar Itens", command=self.command.duplicate_items, bootstyle="primary")
+        self.duplicate_btn = ttk.Button(self.move_buttons_frame, text=" 📄 Duplicar", command=self.command.duplicate_items, bootstyle="warning")
         self.duplicate_btn.pack(side=tk.RIGHT, padx=5)
-
-        self.reset_btn = ttk.Button(self.move_buttons_frame, text="Resetar", command=self.command.reset_macro, bootstyle="primary")
+        self.reset_btn = ttk.Button(self.move_buttons_frame, text=" 🔄 Resetar", command=self.command.reset_macro, bootstyle="secondary")
         self.reset_btn.pack(side=tk.RIGHT, padx=5)
 
     def create_actions(self):
