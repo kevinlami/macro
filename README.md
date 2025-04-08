@@ -1,7 +1,15 @@
-# 🖱️ Macro Recorder com Interface Gráfica
+## 🖱️ Macro Recorder com Interface Gráfica
 
 Este é um gravador de macro feito em Python com suporte a interface gráfica (GUI) que permite automatizar interações no sistema como cliques, movimentos do mouse, teclas pressionadas, esperas e verificação de imagem na tela usando OpenCV.
-# 📦 Funcionalidades
+
+## 🖼️ Exemplo da Interface
+
+Abaixo está uma prévia da interface gráfica do Macro Recorder:
+
+![Interface do Macro Recorder](screenshot1.png)
+![Interface do Macro Recorder](screenshot2.png)
+
+## 📦 Funcionalidades
 
     - Gravação e execução de sequências de ações.
 
@@ -29,7 +37,7 @@ Este é um gravador de macro feito em Python com suporte a interface gráfica (G
 
     - Possibilidade de agrupar ações e pular grupos caso uma imagem esperada não seja encontrada.
 
-# 🧰 Tecnologias utilizadas
+## 🧰 Tecnologias utilizadas
 
     Python 3.x
 
@@ -45,7 +53,7 @@ Este é um gravador de macro feito em Python com suporte a interface gráfica (G
 
     Keyboard
 
-# 🚀 Como executar o projeto
+## 🚀 Como executar o projeto
 
 1. Clone o repositório:
 ```bash
@@ -60,7 +68,7 @@ pip install -r requirements.txt
 ```bash
 python main.py
 ```
-# 📁 Estrutura do projeto
+## 📁 Estrutura do projeto
 ```bash
 ├── .gitignore
 ├── gui.py
@@ -73,15 +81,15 @@ python main.py
 ├── README.md                # Este arquivo
 └── requirements.txt         # Dependências do projeto
 ```
-# 📷 Verificação de imagem com OpenCV
+## 📷 Verificação de imagem com OpenCV
 
 A ação image_check permite que o macro pause e verifique se uma imagem específica está presente na tela. Caso não seja encontrada, o macro pode pular a próxima ação ou grupo de ações.
-# 📌 Observações
+## 📌 Observações
 
     O programa deve ser executado com permissões de administrador no Windows para capturar corretamente os atalhos globais.
 
     É possível adicionar novas ações ou personalizar o comportamento no código-fonte.
 
-# 🧑‍💻 Autor
+## 🧑‍💻 Autor
 
 Kevin Lami
