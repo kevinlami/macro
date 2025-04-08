@@ -6,7 +6,7 @@ Este é um gravador de macro feito em Python com suporte a interface gráfica (G
 
 Abaixo está uma prévia da interface gráfica do Macro Recorder:
 
-<p align="center">
+<p align="left">
   <img src="screenshot1.png" alt="Interface 1" width="300"/>
   <img src="screenshot2.png" alt="Interface 2" width="300"/>
 </p>
