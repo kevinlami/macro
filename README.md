@@ -59,8 +59,8 @@ Abaixo está uma prévia da interface gráfica do Macro Recorder:
 
 1. Clone o repositório:
 ```bash
-git clone https://github.com/seu-usuario/seu-repo.git
-cd seu-repo
+git clone https://github.com/kevinlami/macro.git
+cd macro
 ```
 2. Instale as dependências:
 ```bash
